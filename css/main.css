@@ -94,3 +94,7 @@ textarea {
 .saleText {
     color: green;
 }
+.BUTTON,.SIZE{
+     display: flex;
+     gap: 20px;
+}
