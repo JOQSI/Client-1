@@ -1,3 +1,6 @@
+let eventBus = new Vue()
+
+
 Vue.component('product-details', {
     props: {
         details: {
@@ -34,6 +37,7 @@ Vue.component('product', {
             <p>User is premium: {{ premium }}</p>
             <p>Shipping: {{ shipping }}</p>
             <product-details :details="filteredDetails"></product-details>
+            
             <div
                     class="color-box"
                     v-for="(variant, index) in variants"
@@ -55,20 +59,9 @@ Vue.component('product', {
 
             <a :href="link">More products like this.</a>
         </div>
-          
-        <product-review @review-submitted="addReview"></product-review>
         
-        <div class="reviews">
-        <h2>Reviews</h2>
-        <p v-if="!reviews.length">There are no reviews yet.</p>
-        <ul>
-            <li class="review-item" v-for="review in reviews">
-                <p>{{ review.name }}</p>
-                <p>Rating: {{ review.rating }}</p>
-                <p>{{ review.review }}</p>
-                <p>{{ review.quiz }}</p>
-            </li>
-        </ul>
+        
+            <product-tabs :reviews="reviews" :shipping="shipping" :details="filteredDetails"> @review-submitted="addReview"></product-tabs>
         </div>
     </div>
  `,
@@ -135,7 +128,13 @@ Vue.component('product', {
         } else {
             return ['80% cotton', '20% polyester', 'Gender-neutral', 'Standard quality'];
         }
+    },
+    mounted() {
+        eventBus.$on('review-submitted', productReview => {
+            this.reviews.push(productReview)
+        })
     }
+
 
 
 
@@ -205,7 +204,7 @@ Vue.component('product-review', {
                     rating: this.rating,
                     quiz: this.quiz,
                 }
-                this.$emit('review-submitted', productReview);
+                eventBus.$emit('review-submitted', productReview);
                 this.name = null;
                 this.review = null;
                 this.rating = null;
@@ -220,6 +219,59 @@ Vue.component('product-review', {
 
     }
 })
+Vue.component('product-tabs', {
+    props: {
+        reviews: {
+            type: Array,
+            required: false
+        },
+        shipping: {
+            type: String,
+            required: true
+        },
+        details: {
+            type: Array,
+            required: true
+        }
+    },
+    data() {
+        return {
+            tabs: ['Reviews', 'Make a Review', 'Shipping', 'Details'],
+            selectedTab: 'Reviews'
+        }
+    },
+    template: `
+            <div>   
+                <ul>
+                    <span class="tab"
+                        :class="{ activeTab: selectedTab === tab }"
+                        v-for="(tab, index) in tabs"
+                        @click="selectedTab = tab"
+                    >{{ tab }}</span>
+                </ul>
+                <div class="reviews" v-show="selectedTab === 'Reviews'">
+                    <p v-if="!reviews.length">Пока нет отзывов.</p>
+                    <ul>
+                        <li class="review-item" v-for="review in reviews" :key="review.name">
+                            <p>{{ review.name }}</p>
+                            <p>Rating: {{ review.rating }}</p>
+                            <p>{{ review.review }}</p>
+                        </li>
+                    </ul>
+                </div>
+                <div v-show="selectedTab === 'Make a Review'">
+                    <product-review></product-review>
+                </div>
+                <div v-show="selectedTab === 'Shipping'">
+                    <p>Shipping Cost: {{ shipping }}</p> 
+                </div>
+                <div v-show="selectedTab === 'Details'">
+                    <product-details :details="details"></product-details> 
+                </div>
+        </div>
+            </div>
+        `,
+});
 let app = new Vue({
     el: '#app',
     data: {
@@ -235,6 +287,5 @@ let app = new Vue({
         notupdateCart(id){
             this.cart = this.cart.filter(item => item !== id);
         },
-
     }
 })
